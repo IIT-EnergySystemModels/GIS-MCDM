@@ -1,0 +1,209 @@
+# GIS-MCDM configuration
+#
+# Everything specific to a study lives here: the study area, the input layers, the exclusion constraints and their
+# scenarios, the criteria and the validation layer. The values below reproduce the paper (green hydrogen in Brazil).
+# Layer sources are relative to <data_dir>/Raw Database/.
+
+data_dir = "Data"  # inputs and all outputs; relative to the repository root, or an absolute path
+
+
+[study_area]
+folder = "Study Area"  # folder in Raw Database/ that holds one polygon file (.shp, .gpkg or .geojson)
+# Projected CRS in metres used for the whole analysis, e.g. "EPSG:5880" (SIRGAS 2000 / Brazil Polyconic).
+# "" = the CRS of the polygon if it is projected in metres, otherwise its UTM zone (set a CRS for a large area)
+crs = ""
+
+
+[run]
+interactive = true          # false: no prompts, the values below are used (the notebooks can then run unattended)
+resolution = 500            # grid cell size (m)
+gravity_alpha = 1.0         # distance-decay exponent of the gravity layers
+scenario = "Reference"      # one of [scenarios]
+weights = "EWM"             # EWM or CRITIC, used by 04
+reuse_aligned = false       # true: 01 keeps the aligned layers that already exist instead of computing them again
+compare_classifications = "baseline"  # 04 compares four classification methods: "baseline" (the run above), "always" or "never"
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Input layers, aligned by 01 to the grid of the study area as Aligned/<name>_<resolution>.tif. kind:
+#   raster    resampled to the grid. resampling: bilinear (default), nearest, mode, average, ...
+#             categorical = true for class codes (default resampling mode, uint8, NoData 0); dtype / nodata override
+#   distance  Euclidean distance (m) to the features of a vector layer
+#   presence  1 inside the features of a vector layer, 0 outside
+#   gravity   sum of magnitude / (distance + offset_m)^alpha over the features (points or polygon centroids).
+#             magnitude: numeric column (missing: 1 per feature); offset_m: default one grid cell.
+#             Saved as <name>_<alpha>_<resolution>.tif
+# A layer whose source file is missing is skipped, and so are the constraints and criteria that use it.
+# Features outside the study-area bounding box are not counted in distance and gravity layers.
+# ---------------------------------------------------------------------------------------------------------------------
+
+[layers.Elevation]
+kind = "raster"
+source = "Elevation&Slope/Elevation.tif"   # m
+
+[layers.Slope]
+kind = "raster"
+source = "Elevation&Slope/Slope.tif"       # degrees
+
+[layers.Coverage]
+kind = "raster"
+source = "Land Coverage/Coverage.tif"      # MapBiomas land-cover classes
+categorical = true
+
+[layers.Protected_Areas]
+kind = "presence"
+source = "Protected Areas/Protected Areas.shp"
+
+[layers.Solar_Resource]
+kind = "raster"
+source = "Solar Resource/Solar Resource.tif"
+
+[layers.Wind_Resource]
+kind = "raster"
+source = "Wind Resource/Wind Resource.tif"
+
+[layers.SolarWind_Complementarity]
+kind = "raster"
+source = "Solar-Wind Complementarity/Solar-Wind Complementarity.tif"  # built by scripts/solar_wind_complementarity.py
+
+[layers.Dist_Ports]
+kind = "distance"
+source = "Ports/Ports.shp"
+
+[layers.Dist_Highways]
+kind = "distance"
+source = "Highways/Highways.shp"
+
+[layers.Dist_Pipelines]
+kind = "distance"
+source = "Gas Pipelines/Pipelines.shp"
+
+[layers.Dist_Superficial_Water]
+kind = "distance"
+source = "Water Availability/Superficial Water.gpkg"
+
+[layers.Dist_Substations]
+kind = "distance"
+source = "Hosting Capacity/Hosting Capacity.shp"  # substation points
+
+[layers.Gravity_Hydrogen_Demand]
+kind = "gravity"
+source = "Hydrogen Demand/Hydrogen Demand.shp"
+magnitude = "Estimated"  # estimated demand (t/year)
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Hard constraints of the exclusion mask (02): a cell is excluded if it fails any of them, or if the layer has NoData.
+#   min / max  a number, or the name of a parameter of the scenario chosen in 02
+#   exclude    values that exclude a cell (e.g. land-cover classes, or 1 = inside the features of a presence layer)
+#   buffer_m   the excluded area grows by this distance (also inwards from the edge of the study area)
+# ---------------------------------------------------------------------------------------------------------------------
+
+[[constraints]]
+layer = "Elevation"
+max = "max_elevation"
+
+[[constraints]]
+layer = "Slope"
+max = "max_slope"
+
+[[constraints]]
+layer = "Coverage"
+# MapBiomas class codes excluded in the paper; with another land-cover product, use its codes
+exclude = [3, 5, 6, 7, 11, 23, 24, 29, 30, 31, 32, 33, 49, 50, 84]
+
+[[constraints]]
+layer = "Dist_Superficial_Water"
+min = 500.0                  # no construction right next to water (m)
+max = "max_dist_water"
+
+[[constraints]]
+layer = "Dist_Highways"
+min = 500.0                  # safety buffer (m)
+max = "max_dist_highway"
+
+[[constraints]]
+layer = "Protected_Areas"
+exclude = [1]                # inside a protected area
+buffer_m = 1000.0
+
+
+# Scenario parameters used by the constraints above (elevation in m, slope in degrees, distances in m)
+[scenarios.Conservative]
+max_elevation = 1250
+max_slope = 5
+max_dist_water = 10000.0
+max_dist_highway = 10000.0
+
+[scenarios.Reference]
+max_elevation = 1500
+max_slope = 7
+max_dist_water = 25000.0
+max_dist_highway = 25000.0
+
+[scenarios.Relaxed]
+max_elevation = 2000
+max_slope = 10
+max_dist_water = 50000.0
+max_dist_highway = 50000.0
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Criteria of the MCDM matrix (02-04), in figure order.
+#   type       cost (lower is better) or benefit (higher is better)
+#   label      name in figures (matplotlib mathtext allowed)
+#   transform  "log" for heavy-tailed layers (applied before scaling, weighting and aggregation)
+#   scaled     true if the layer is already on a 0-1 benefit scale: the weights use it without min-max scaling
+# ---------------------------------------------------------------------------------------------------------------------
+
+[[criteria]]
+layer = "Dist_Ports"
+type = "cost"
+label = "Dist. to ports"
+
+[[criteria]]
+layer = "Dist_Pipelines"
+type = "cost"
+label = "Dist. to pipelines"
+
+[[criteria]]
+layer = "Dist_Highways"
+type = "cost"
+label = "Dist. to highways"
+
+[[criteria]]
+layer = "Dist_Superficial_Water"
+type = "cost"
+label = "Dist. to surface water"
+
+[[criteria]]
+layer = "Dist_Substations"
+type = "cost"
+label = "Dist. to substations"
+
+[[criteria]]
+layer = "Solar_Resource"
+type = "benefit"
+label = "Solar resource"
+
+[[criteria]]
+layer = "Wind_Resource"
+type = "benefit"
+label = "Wind resource"
+
+[[criteria]]
+layer = "SolarWind_Complementarity"
+type = "benefit"
+label = "Solar–wind complementarity"
+scaled = true
+
+[[criteria]]
+layer = "Gravity_Hydrogen_Demand"
+type = "benefit"
+label = "H$_2$ demand"
+transform = "log"
+
+
+[validation]
+# Existing projects (points) for the logistic regression (03) and the validation (04); "" or a missing file skips both
+projects = "Hydrogen Projects/H2V Projects.shp"
