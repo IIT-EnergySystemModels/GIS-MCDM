@@ -27,8 +27,8 @@ All four notebooks save their figures to `Data/Figures/` as PNG (600 dpi in note
 You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`).
 
 ```bash
-git clone https://github.com/IIT-EnergySystemModels/H2VSiting.git
-cd H2VSiting
+git clone https://github.com/IIT-EnergySystemModels/GIS-MCDM.git
+cd GIS-MCDM
 
 python -m venv .venv
 # Windows
