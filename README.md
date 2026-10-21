@@ -24,7 +24,7 @@ All four notebooks save their figures to `Data/Figures/`; notebooks 02–04 save
 
 ## Installation
 
-You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`). The results were produced with Python 3.13.
+You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`).
 
 ```bash
 git clone https://github.com/EdnaSofia96/GIS-MCDM.git
