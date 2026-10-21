@@ -8,6 +8,7 @@ scaling of the criteria. The notebooks import it from the repository root.
 from __future__ import annotations
 
 import json
+import os
 import re
 import tomllib
 from pathlib import Path
@@ -24,14 +25,19 @@ VECTOR_EXTS = (".shp", ".gpkg", ".geojson")
 RUN_DEFAULTS = {"interactive": True, "resolution": 500, "gravity_alpha": 1.0, "scenario": "Reference",
                 "weights": "EWM", "reuse_aligned": False, "compare_classifications": "baseline"}
 MATRIX_PATTERN = re.compile(r"^MCDM_Matrix_(.+)_([\d.]+|NA)_([\d.]+m)\.csv$")
+RUN_OVERRIDE_ENV = "GIS_MCDM_RUN"  # JSON with [run] values set by run_workflow.py for the notebook it executes
 
 
 # --- CONFIGURATION ---
 def load_config(path: Path = CONFIG_PATH):
-    """Read config.toml, check that it is consistent and return (config, paths)."""
+    """Read config.toml, check that it is consistent and return (config, paths).
+    cfg["baseline"] keeps the [run] values of the file; cfg["run"] can be overridden by run_workflow.py."""
     with open(path, "rb") as f:
         cfg = tomllib.load(f)
     cfg["run"] = RUN_DEFAULTS | cfg.get("run", {})
+    cfg["baseline"] = dict(cfg["run"])
+    if override := os.environ.get(RUN_OVERRIDE_ENV):
+        cfg["run"] |= json.loads(override)
     cfg.setdefault("constraints", [])
     cfg.setdefault("criteria", [])
     cfg.setdefault("validation", {}).setdefault("projects", "")
@@ -157,23 +163,37 @@ def find_runs(cfg, paths):
     return runs
 
 
+def _matches(params, run) -> bool:
+    return (run.scenario == params["scenario"] and float(run.res[:-1]) == params["resolution"]
+            and (run.alpha == "NA" or float(run.alpha) == params["gravity_alpha"]))
+
+
 def is_baseline(cfg, run) -> bool:
-    """True for the run that matches scenario, gravity_alpha and resolution in [run]."""
-    c = cfg["run"]
-    return (run.scenario == c["scenario"] and float(run.res[:-1]) == c["resolution"]
-            and (run.alpha == "NA" or float(run.alpha) == c["gravity_alpha"]))
+    """True for the run that matches scenario, gravity_alpha and resolution in [run] of config.toml."""
+    return _matches(cfg["baseline"], run)
 
 
 def choose_run(cfg, runs, usable=lambda run: True, unusable_note=""):
-    """List the runs and return the one chosen; the default is the baseline run of [run]."""
+    """List the runs and return the one chosen. The default is the run of the current [run] values;
+    without prompts (interactive = false) it must exist."""
+    interactive = cfg["run"]["interactive"]
+    wanted = next((run for run in runs if _matches(cfg["run"], run)), None)
+    if not interactive:
+        c = cfg["run"]
+        if wanted is None:
+            raise FileNotFoundError(f"No MCDM matrix for scenario {c['scenario']}, alpha {c['gravity_alpha']:g}, "
+                                    f"{c['resolution']:g} m. Run 02_Matrix_Preparation with these values first.")
+        if not usable(wanted):
+            raise FileNotFoundError(f"{wanted.matrix.name}: {unusable_note}.")
+        print(f"Matrix: {wanted.matrix.name}")
+        return wanted
     ok = [i for i, run in enumerate(runs, start=1) if usable(run)]
     if not ok:
         raise FileNotFoundError("No usable MCDM matrix found. Run the previous notebooks first.")
     for i, run in enumerate(runs, start=1):
         print(f"  {i}. {run.scenario:<13} alpha {run.alpha:<5} {run.res}" + ("" if usable(run) else f"  ({unusable_note})"))
-    default = next((i for i in ok if is_baseline(cfg, runs[i - 1])),
+    default = next((i for i in ok if runs[i - 1] is wanted),
                    next((i for i in ok if runs[i - 1].scenario == cfg["run"]["scenario"]), ok[0]))
-    interactive = cfg["run"]["interactive"]
     while True:
         answer = input(f"Which matrix? (1-{len(runs)}) [{default}]: ").strip() if interactive else ""
         if not answer:

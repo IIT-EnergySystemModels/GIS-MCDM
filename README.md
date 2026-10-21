@@ -7,7 +7,7 @@ The workflow runs in four Jupyter notebooks:
 1. Every input layer is aligned to a common grid of the study area.
 2. Cells that break a hard constraint are excluded, and the decision matrix of the remaining cells is built.
 3. Objective weights are computed for the criteria.
-4. The criteria are aggregated into suitability maps with five MCDM methods, and the results are compared and validated against existing projects.
+4. The criteria are aggregated into suitability maps with five MCDM methods, and the results are compared and benchmarked against existing projects.
 
 ## Workflow
 
@@ -18,13 +18,13 @@ The workflow runs in four Jupyter notebooks:
 | 3 | [03_Criteria_Weighting.ipynb](03_Criteria_Weighting.ipynb) | Computes objective weights with the Entropy Weight Method (EWM) and CRITIC. Fits a presence–background logistic regression (Firth-penalised, with bootstrap and spatial cross-validation) against existing projects. | `Weights/Criteria_Weights_<run>.csv`, `Logistic Regression/*` |
 | 4 | [04_Criteria_Aggregation.ipynb](04_Criteria_Aggregation.ipynb) | Computes suitability scores with WSM, WASPAS, TOPSIS, MOORA and Compromise Programming, then classifies them into five classes (Jenks). Exports maps, measures method agreement (Spearman, Kendall τ/W, weighted κ, Krippendorff α, Jaccard) and builds the consensus suitable area. Validates the results against existing projects. | `Suitability Scores/*.csv`, `Suitability Maps/*.tif` |
 
-All four notebooks save their figures to `Data/Figures/`; notebooks 02–04 save them as PNG (600 dpi) and SVG. The notebooks share the helpers in [gis_mcdm.py](gis_mcdm.py).
+All four notebooks save their figures to `Data/Figures/` as PNG (600 dpi in notebooks 02–04). [run_workflow.py](run_workflow.py) runs the four notebooks in one go, and the notebooks share the helpers in [gis_mcdm.py](gis_mcdm.py).
 
 [scripts/solar_wind_complementarity.py](scripts/solar_wind_complementarity.py) is an optional pre-processing step. It builds a *Solar-Wind Complementarity* raster from ERA5 data (see [ERA5 complementarity layer](#era5-complementarity-layer)).
 
 ## Installation
 
-You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`). The results were produced with Python 3.13.
+You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`). 
 
 ```bash
 git clone https://github.com/EdnaSofia96/GIS-MCDM.git
@@ -43,7 +43,7 @@ The versions in `requirements.txt` are the ones used to produce the results. Rec
 
 ## Using it for your own study
 
-1. Put your data in `Data/Raw Database/`. The input data of the paper is **not included in this repository** because it adds up to about 45 GB.
+1. Put your data in `Data/Raw Database/`. 
 2. Put the outline of your study area (one polygon file, `.shp`, `.gpkg` or `.geojson`, any name) in `Data/Raw Database/Study Area/`.
 3. Edit [config.toml](config.toml). Every option is explained in its comments:
 
@@ -57,9 +57,9 @@ The versions in `requirements.txt` are the ones used to produce the results. Rec
 | `[[criteria]]` | The criteria of the MCDM: layer, `cost` or `benefit`, figure `label`, optional `transform = "log"` and `scaled = true` |
 | `[validation]` | Point layer of existing projects for the logistic regression (03) and the validation (04) |
 
-4. Run the notebooks (see [Running the workflow](#running-the-workflow)).
+4. Run the workflow (see [Running the workflow](#running-the-workflow)).
 
-**Missing layers.** Only the study-area polygon is required. If a layer's source file is missing, 01 skips it, and 02 builds the exclusion mask without its constraints and the matrix without its criteria, listing what it skipped. The MCDM needs at least two criteria. Without gravity criteria, runs are tagged `NA` in place of α (for example `MCDM_Matrix_Reference_NA_500m.csv`). Without a projects layer, or with too few projects, 03 skips the logistic regression and 04 skips the validation.
+**Missing layers.** Only the study-area polygon is required. If a layer's source file is missing, 01 skips it, and 02 builds the exclusion mask without its constraints and the matrix without its criteria, listing what it skipped. The MCDM needs at least two criteria. Without gravity criteria, runs are tagged `NA` in place of α (for example `MCDM_Matrix_Reference_NA_500m.csv`). Without a projects layer, or with too few projects, 03 skips the logistic regression and 04 skips the benchmarking.
 
 **Study area and CRS.** All layers are reprojected to one projected CRS in metres, set by `crs` in `[study_area]`:
 
@@ -95,23 +95,23 @@ Data/
     └── Hydrogen Projects/            H2V Projects.shp
 ```
 
-| Layer | Type | Used as | Requirements | Source |
-|-------|------|---------|--------------|--------|
-| Study area (Brazil) | Polygon | Study area, anchor grid | — | *TODO* |
-| Elevation | Raster (m) | Exclusion (max. elevation) | — | *TODO* |
-| Slope | Raster (degrees) | Exclusion (max. slope) | — | *TODO* |
-| Solar Resource | Raster | Benefit criterion | — | *TODO* |
-| Wind Resource | Raster | Benefit criterion | — | *TODO* |
-| Solar-Wind Complementarity | Raster (0–1) | Benefit criterion | Built with `scripts/solar_wind_complementarity.py` | ERA5 (see below) |
-| Land Coverage | Raster (class codes) | Exclusion (land use) | MapBiomas classes; the excluded codes are listed in `config.toml` | MapBiomas *TODO: collection, year* |
-| Protected Areas | Polygon | Exclusion (+1 km buffer) | — | *TODO* |
-| Ports | Point | Cost criterion (distance) | — | *TODO* |
-| Highways | Line | Cost criterion and exclusion (distance) | — | *TODO* |
-| Gas Pipelines | Line | Cost criterion (distance) | — | *TODO* |
-| Superficial Water | Line/polygon | Cost criterion and exclusion (distance) | — | *TODO* |
-| Hosting Capacity | Point (substations) | Cost criterion (distance) | — | *TODO* |
-| Hydrogen Demand | Point | Benefit criterion (gravity model) | Numeric column `Estimated` (t/year) | *TODO* |
-| H2V Projects | Point | Logistic regression and validation | — | *TODO* |
+| Layer | Type | Used as | Requirements |
+|-------|------|---------|--------------|
+| Study area (Brazil) | Polygon | Study area, anchor grid | — |
+| Elevation | Raster (m) | Exclusion (max. elevation) | — |
+| Slope | Raster (degrees) | Exclusion (max. slope) | — |
+| Solar Resource | Raster | Benefit criterion | — |
+| Wind Resource | Raster | Benefit criterion | — |
+| Solar-Wind Complementarity | Raster (0–1) | Benefit criterion | Built with `scripts/solar_wind_complementarity.py` |
+| Land Coverage | Raster (class codes) | Exclusion (land use) | MapBiomas classes; the excluded codes are listed in `config.toml` |
+| Protected Areas | Polygon | Exclusion (+1 km buffer) |
+| Ports | Point | Cost criterion (distance) | — |
+| Highways | Line | Cost criterion and exclusion (distance) | — |
+| Gas Pipelines | Line | Cost criterion (distance) | — |
+| Superficial Water | Line/polygon | Cost criterion and exclusion (distance) | — |
+| Hosting Capacity | Point (substations) | Cost criterion (distance) | — |
+| Hydrogen Demand | Point | Benefit criterion (gravity model) | Numeric column `Estimated` (t/year) |
+| H2V Projects | Point | Logistic regression and validation | — |
 
 ### ERA5 complementarity layer
 
@@ -125,22 +125,40 @@ The index is (1 − r) / 2, where r is the Pearson correlation between the solar
 
 ## Running the workflow
 
-1. Start Jupyter (`jupyter lab`) or open the notebooks in VS Code.
-2. Run the notebooks in order: **01 → 02 → 03 → 04**.
-3. Each notebook asks for its parameters in its second cell. Press **Enter** to accept the default from `[run]` in `config.toml`, shown in brackets.
+### All at once
 
-| Notebook | Prompt |
-|----------|--------|
-| 01 | Grid resolution (m); gravity α (only if there are gravity layers) |
-| 02 | Resolution; gravity α (from those created by 01); scenario |
-| 03 | Which MCDM matrix to analyse (from those created by 02) |
-| 04 | Which matrix (from those with weights); weighting method (EWM or CRITIC) |
+From the repository root, with the environment activated:
 
-To run without prompts, set `interactive = false` in `[run]`. The notebooks then use the `[run]` values and can run unattended, for example with `jupyter nbconvert --to notebook --execute --inplace 01_Data_Preprocessing.ipynb`.
+```bash
+python run_workflow.py
+```
 
-Each run tags its output files with its parameters, `<scenario>_<alpha>_<resolution>` (for example `MCDM_Matrix_Reference_1_500m.csv`), so you can produce and compare several scenarios, α values and resolutions side by side. 04 also adds the weighting method (for example `EWM_Reference_1_500m`). By default, the comparison of four classification methods in 04 runs only for the baseline run, the one set in `[run]`.
+The script asks for every parameter first. Press **Enter** to keep the default from `[run]` in `config.toml`, shown in brackets:
 
-To recompute only some layers in 01, set `reuse_aligned = true`: aligned layers that already exist are kept. Delete those you want recomputed. Keep it `false` when the inputs or the study area change.
+| Question | Example |
+|----------|---------|
+| Notebooks to run | `1-4` (all), `2-4` (layers already aligned), `4` |
+| Grid resolution (m) | `500` |
+| Gravity α (only if there are gravity criteria) | `1` |
+| Scenario | `Reference`, or `all` |
+| Weighting method | `EWM`, or `all` |
+| Keep aligned layers that already exist? | `n` |
+
+You can give several values, comma-separated (for example α `0.5, 0.75, 1, 2` and scenario `all`): every combination is run. 01 runs once per resolution and α (after the first α, only the gravity layers are recomputed), 02 and 03 once per scenario, and 04 once per weighting method.
+
+The script then runs the notebooks on its own and reports each one as it finishes. Each executed notebook, with all its outputs, is saved in `Data/Executed/` (for example `02_Matrix_Preparation_Reference_1_500m.ipynb`); the notebooks in the repository are not modified. If a notebook fails, the script stops and saves that notebook with the error in `Data/Executed/`.
+
+`python run_workflow.py --defaults` asks nothing and runs all four notebooks with the `[run]` values of `config.toml`.
+
+### One notebook at a time
+
+You can also open the notebooks in Jupyter (`jupyter lab`) or VS Code and run them in order, **01 → 02 → 03 → 04**. Each asks for its parameters in its second cell (Enter keeps the default from `[run]`); with `interactive = false` in `[run]` they use the `[run]` values without asking.
+
+### Outputs
+
+Each run tags its output files with its parameters, `<scenario>_<alpha>_<resolution>` (for example `MCDM_Matrix_Reference_1_500m.csv`), so several scenarios, α values and resolutions live side by side. 04 also adds the weighting method (for example `EWM_Reference_1_500m`). By default, the comparison of four classification methods in 04 runs only for the baseline run, the one set in `[run]` of `config.toml`.
+
+With `reuse_aligned = true`, 01 keeps the aligned layers that already exist; delete those you want recomputed. Keep it `false` when the inputs or the study area change.
 
 ### Hardware
 
@@ -154,6 +172,7 @@ The figures use Palatino (Palatino Linotype / TeX Gyre Pagella) and fall back to
 
 ```
 ├── config.toml                 study area, layers, constraints, scenarios, criteria, run defaults
+├── run_workflow.py             runs notebooks 01-04 in one go
 ├── gis_mcdm.py                 helpers shared by the notebooks
 ├── 01_Data_Preprocessing.ipynb
 ├── 02_Matrix_Preparation.ipynb
