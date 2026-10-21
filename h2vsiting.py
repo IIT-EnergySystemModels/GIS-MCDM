@@ -1,7 +1,7 @@
 """
-gis_mcdm.py
+h2vsiting.py
 
-Shared helpers of the four notebooks: reading config.toml, the run prompts, run names, the matrix info file and the
+Shared helpers of the four H2VSiting notebooks: reading config.toml, the run prompts, run names, the matrix info file and the
 scaling of the criteria. The notebooks import it from the repository root.
 """
 
@@ -25,7 +25,7 @@ VECTOR_EXTS = (".shp", ".gpkg", ".geojson")
 RUN_DEFAULTS = {"interactive": True, "resolution": 500, "gravity_alpha": 1.0, "scenario": "Reference",
                 "weights": "EWM", "reuse_aligned": False, "compare_classifications": "baseline"}
 MATRIX_PATTERN = re.compile(r"^MCDM_Matrix_(.+)_([\d.]+|NA)_([\d.]+m)\.csv$")
-RUN_OVERRIDE_ENV = "GIS_MCDM_RUN"  # JSON with [run] values set by run_workflow.py for the notebook it executes
+RUN_OVERRIDE_ENV = "H2VSITING_RUN"  # JSON with [run] values set by run_workflow.py for the notebook it executes
 
 
 # --- CONFIGURATION ---

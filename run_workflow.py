@@ -24,7 +24,7 @@ from jupyter_client.kernelspec import KernelSpec, KernelSpecManager
 from nbclient import NotebookClient
 from nbclient.exceptions import CellExecutionError
 
-from gis_mcdm import REPO_DIR, RUN_OVERRIDE_ENV, alpha_tag, load_config
+from h2vsiting import REPO_DIR, RUN_OVERRIDE_ENV, alpha_tag, load_config
 
 NOTEBOOKS = {1: "01_Data_Preprocessing", 2: "02_Matrix_Preparation", 3: "03_Criteria_Weighting",
              4: "04_Criteria_Aggregation"}

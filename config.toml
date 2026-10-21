@@ -1,4 +1,4 @@
-# GIS-MCDM configuration
+# H2VSiting configuration
 #
 # Everything specific to a study lives here: the study area, the input layers, the exclusion constraints and their
 # scenarios, the criteria and the validation layer. The values below reproduce the paper (green hydrogen in Brazil).
