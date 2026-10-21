@@ -16,7 +16,7 @@ The workflow runs in four Jupyter notebooks:
 | 1 | [01_Data_Preprocessing.ipynb](01_Data_Preprocessing.ipynb) | Inventories the raw data, builds the anchor grid of the study area at the chosen resolution and aligns every layer to it: resampled rasters, Euclidean distances, presence masks and gravity surfaces. | `Aligned/*.tif`, `Raw Database/Study Area/anchor_grid_<res>.tif` |
 | 2 | [02_Matrix_Preparation.ipynb](02_Matrix_Preparation.ipynb) | Builds the hard-exclusion mask for one scenario and the MCDM decision matrix of the viable cells. Plots the criteria distributions and their correlations. | `Exclusion Mask/*.tif`, `Matrices/MCDM_Matrix_<run>.csv` (+ `.json` with its criteria) |
 | 3 | [03_Criteria_Weighting.ipynb](03_Criteria_Weighting.ipynb) | Computes objective weights with the Entropy Weight Method (EWM) and CRITIC. Fits a presence–background logistic regression (Firth-penalised, with bootstrap and spatial cross-validation) against existing projects. | `Weights/Criteria_Weights_<run>.csv`, `Logistic Regression/*` |
-| 4 | [04_Criteria_Aggregation.ipynb](04_Criteria_Aggregation.ipynb) | Computes suitability scores with WSM, WASPAS, TOPSIS, MOORA and Compromise Programming, then classifies them into five classes (Jenks). Exports maps, measures method agreement (Spearman, Kendall τ/W, weighted κ, Krippendorff α, Jaccard) and builds the consensus suitable area. Validates the results against existing projects. | `Suitability Scores/*.csv`, `Suitability Maps/*.tif` |
+| 4 | [04_Criteria_Aggregation.ipynb](04_Criteria_Aggregation.ipynb) | Computes suitability scores with WSM, WASPAS, TOPSIS, MOORA and Compromise Programming, then classifies them into five classes (Jenks). Exports maps, measures method agreement (Spearman, Jaccard) and builds the consensus suitable area. Benchmarks the results against existing projects. | `Suitability Scores/*.csv`, `Suitability Maps/*.tif` |
 
 All four notebooks save their figures to `Data/Figures/` as PNG (600 dpi in notebooks 02–04). [run_workflow.py](run_workflow.py) runs the four notebooks in one go, and the notebooks share the helpers in [gis_mcdm.py](gis_mcdm.py).
 
@@ -24,7 +24,7 @@ All four notebooks save their figures to `Data/Figures/` as PNG (600 dpi in note
 
 ## Installation
 
-You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`). 
+You need Python 3.11 or later (`config.toml` is read with the standard-library `tomllib`).
 
 ```bash
 git clone https://github.com/EdnaSofia96/GIS-MCDM.git
